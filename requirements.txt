@@ -1,0 +1,8 @@
+# Requires Python 3.10+.
+# The exported .keras files were saved with Keras 3.x, so Python 3.8 +
+# TensorFlow 2.13 is not a good runtime target for this app.
+numpy>=1.26,<3
+pillow>=10,<12
+streamlit>=1.40,<2
+tensorflow==2.20.0
+keras==3.13.2
