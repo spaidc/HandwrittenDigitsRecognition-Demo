@@ -4,5 +4,6 @@
 numpy>=1.26,<3
 pillow>=10,<12
 streamlit>=1.40,<2
+streamlit-drawable-canvas>=0.9,<1
 tensorflow==2.20.0
 keras==3.13.2

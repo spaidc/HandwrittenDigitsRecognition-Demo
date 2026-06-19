@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import numpy as np
 from PIL import Image, UnidentifiedImageError
 import streamlit as st
 
@@ -89,7 +90,7 @@ def _render_sidebar(
 
         input_mode = st.radio(
             "Input",
-            ["Upload image", "Camera snapshot"],
+            ["Upload image", "Camera snapshot", "Draw on canvas"],
             horizontal=False,
         )
 
@@ -122,10 +123,13 @@ def _read_user_image(input_mode: str) -> Image.Image | None:
             return None
         return _open_uploaded_image(uploaded_file)
 
-    camera_file = st.camera_input("Camera")
-    if camera_file is None:
-        return None
-    return _open_uploaded_image(camera_file)
+    if input_mode == "Camera snapshot":
+        camera_file = st.camera_input("Camera")
+        if camera_file is None:
+            return None
+        return _open_uploaded_image(camera_file)
+
+    return _read_canvas_image()
 
 
 def _open_uploaded_image(file) -> Image.Image | None:
@@ -136,8 +140,49 @@ def _open_uploaded_image(file) -> Image.Image | None:
         return None
 
 
+def _read_canvas_image() -> Image.Image | None:
+    try:
+        from streamlit_drawable_canvas import st_canvas
+    except ModuleNotFoundError:
+        st.error(
+            "Canvas input requires streamlit-drawable-canvas. "
+            "Run: python -m pip install -r requirements.txt"
+        )
+        return None
+
+    st.caption("Draw one digit using the white pen.")
+    canvas_result = st_canvas(
+        fill_color="rgba(255, 255, 255, 0)",
+        stroke_width=18,
+        stroke_color="#FFFFFF",
+        background_color="#000000",
+        height=280,
+        width=280,
+        drawing_mode="freedraw",
+        key="digit_canvas",
+    )
+
+    if canvas_result.image_data is None:
+        return None
+
+    canvas = np.asarray(canvas_result.image_data, dtype=np.uint8)
+    if canvas.ndim != 3 or canvas.shape[2] < 3:
+        return None
+
+    rgb = canvas[:, :, :3]
+    if np.count_nonzero(rgb > 20) < 20:
+        return None
+
+    return Image.fromarray(rgb, mode="RGB")
+
+
 def _render_empty_state(input_mode: str) -> None:
-    label = "upload an image" if input_mode == "Upload image" else "capture a photo"
+    labels = {
+        "Upload image": "upload an image",
+        "Camera snapshot": "capture a photo",
+        "Draw on canvas": "draw a digit on the canvas",
+    }
+    label = labels.get(input_mode, "provide an input")
     st.info(f"Ready to run once you {label}.")
 
 
